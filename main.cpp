@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <iomanip>
 #include <cstdlib>
 
 using namespace std;
@@ -168,6 +169,72 @@ bool nuskaitytiUzsakyma(
     return true;
 }
 
+double skaiciuotiEilutesSumaPriesNuolaida(double kaina, int kiekis)
+{
+    return kaina * kiekis;
+}
+
+double skaiciuotiEilutesNuolaida(double kaina, int kiekis)
+{
+    double sumaPries = skaiciuotiEilutesSumaPriesNuolaida(kaina, kiekis);
+    if (kiekis >= 10)
+    {
+        return sumaPries * 0.10;
+    }
+    return 0.0;
+}
+
+double skaiciuotiEilutesMoketinaSuma(double kaina, int kiekis)
+{
+    return skaiciuotiEilutesSumaPriesNuolaida(kaina, kiekis) - skaiciuotiEilutesNuolaida(kaina, kiekis);
+}
+
+void skaiciuotiVisoUzsakymoSumas(
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius,
+    double &visoPriesNuolaidas,
+    double &visoNuolaidos,
+    double &visoMoketina
+)
+{
+    visoPriesNuolaidas = 0.0;
+    visoNuolaidos = 0.0;
+    visoMoketina = 0.0;
+
+    for (int i = 0; i < irasuSkaicius; i++)
+    {
+        double eilPries = skaiciuotiEilutesSumaPriesNuolaida(kainos[i], kiekiai[i]);
+        double eilNuol = skaiciuotiEilutesNuolaida(kainos[i], kiekiai[i]);
+        double eilMok = eilPries - eilNuol;
+
+        visoPriesNuolaidas += eilPries;
+        visoNuolaidos += eilNuol;
+        visoMoketina += eilMok;
+    }
+}
+
+double skaiciuotiKategorijosMoketinaSuma(
+    const string kategorijos[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius,
+    const string &kategorija
+)
+{
+    double suma = 0.0;
+
+    for (int i = 0; i < irasuSkaicius; i++)
+    {
+        if (kategorijos[i] == kategorija)
+        {
+            suma += skaiciuotiEilutesMoketinaSuma(kainos[i], kiekiai[i]);
+        }
+    }
+
+    return suma;
+}
+
 int main()
 {
     string kategorijos[MAKS_IRASU];
@@ -182,6 +249,19 @@ int main()
         return 1;
     }
 
-    cout << "Sekmingai nuskaityta prekiu irasu: " << irasuSkaicius << endl;
+    double visoPries = 0.0;
+    double visoNuol = 0.0;
+    double visoMok = 0.0;
+    skaiciuotiVisoUzsakymoSumas(kainos, kiekiai, irasuSkaicius, visoPries, visoNuol, visoMok);
+
+    cout << fixed << setprecision(2);
+    cout << "Nuskaityta irasu: " << irasuSkaicius << endl;
+    cout << "Suma pries nuolaidas: " << visoPries << " Eur" << endl;
+    cout << "Bendra nuolaidu suma: " << visoNuol << " Eur" << endl;
+    cout << "Galutine moketina suma: " << visoMok << " Eur" << endl;
+    cout << "Dviraciai: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Dviraciai") << " Eur" << endl;
+    cout << "Dalys: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Dalys") << " Eur" << endl;
+    cout << "Aksesuarai: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Aksesuarai") << " Eur" << endl;
+
     return 0;
 }
