@@ -265,6 +265,91 @@ void isvestiPrekiuLentele(
     }
 }
 
+void perziuretiKategorija(
+    const string kategorijos[],
+    const string pavadinimai[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius,
+    const string &kategorija
+)
+{
+    cout << fixed << setprecision(2);
+    cout << endl << "Kategorija: " << kategorija << endl;
+
+    int rasta = 0;
+    for (int i = 0; i < irasuSkaicius; i++)
+    {
+        if (kategorijos[i] == kategorija)
+        {
+            double sumaPries = skaiciuotiEilutesSumaPriesNuolaida(kainos[i], kiekiai[i]);
+            double nuolaida = skaiciuotiEilutesNuolaida(kainos[i], kiekiai[i]);
+            double moketina = sumaPries - nuolaida;
+
+            rasta++;
+            cout << rasta << ". " << pavadinimai[i]
+                 << " | Kaina: " << kainos[i] << " Eur"
+                 << " | Kiekis: " << kiekiai[i]
+                 << " | Suma pries nuolaida: " << sumaPries << " Eur"
+                 << " | Nuolaida: " << nuolaida << " Eur"
+                 << " | Moketina: " << moketina << " Eur" << endl;
+        }
+    }
+
+    if (rasta == 0)
+    {
+        cout << "Pasirinktoje kategorijoje prekiu nera." << endl;
+    }
+
+    double katSuma = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, kategorija
+    );
+    cout << "Kategorijos '" << kategorija << "' moketina suma po nuolaidu: " << katSuma << " Eur" << endl;
+}
+
+void perziuretiVisoUzsakymoSumas(
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius
+)
+{
+    double visoPries = 0.0;
+    double visoNuol = 0.0;
+    double visoMok = 0.0;
+
+    skaiciuotiVisoUzsakymoSumas(kainos, kiekiai, irasuSkaicius, visoPries, visoNuol, visoMok);
+
+    cout << fixed << setprecision(2);
+    cout << endl << "--- Viso uzsakymo sumos ---" << endl;
+    cout << "Suma pries nuolaidas:  " << visoPries << " Eur" << endl;
+    cout << "Bendra nuolaidu suma:  " << visoNuol << " Eur" << endl;
+    cout << "Galutine moketina suma: " << visoMok << " Eur" << endl;
+}
+
+void perziuretiSumasPagalKategorijas(
+    const string kategorijos[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius
+)
+{
+    double sumaDviraciai = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Dviraciai"
+    );
+    double sumaDalys = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Dalys"
+    );
+    double sumaAksesuarai = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Aksesuarai"
+    );
+
+    cout << fixed << setprecision(2);
+    cout << endl << "--- Moketinos sumos pagal kategorijas (po nuolaidu) ---" << endl;
+    cout << "Dviraciai:  " << sumaDviraciai << " Eur" << endl;
+    cout << "Dalys:      " << sumaDalys << " Eur" << endl;
+    cout << "Aksesuarai: " << sumaAksesuarai << " Eur" << endl;
+}
+
 void isvestiVisaAtaskaita(
     ostream &out,
     const string kategorijos[],
@@ -344,6 +429,53 @@ bool issaugotiAtaskaitaIFaila(
     return true;
 }
 
+string pasirinktiKategorijaMeniu()
+{
+    int pasirinkimas = 0;
+    while (true)
+    {
+        cout << endl << "Pasirinkite kategorija:" << endl;
+        cout << "1. Dviraciai" << endl;
+        cout << "2. Dalys" << endl;
+        cout << "3. Aksesuarai" << endl;
+        cout << "Jusu pasirinkimas: ";
+
+        if (!(cin >> pasirinkimas))
+        {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Netinkama ivestis. Iveskite skaiciu nuo 1 iki 3." << endl;
+            continue;
+        }
+
+        switch (pasirinkimas)
+        {
+            case 1:
+                return "Dviraciai";
+            case 2:
+                return "Dalys";
+            case 3:
+                return "Aksesuarai";
+            default:
+                cout << "Tokios kategorijos nera. Bandykite dar karta." << endl;
+                break;
+        }
+    }
+}
+
+void isvestiMeniu()
+{
+    cout << endl << "=== DVIRACIU PARDUOTUVES UZSAKYMO SKAICIUOKLE ===" << endl;
+    cout << "1. Perziureti visas uzsakymo prekes." << endl;
+    cout << "2. Perziureti pasirinktos kategorijos prekes." << endl;
+    cout << "3. Perziureti viso uzsakymo sumas." << endl;
+    cout << "4. Perziureti sumas pagal kategorijas." << endl;
+    cout << "5. Parodyti visa uzsakymo ataskaita." << endl;
+    cout << "6. Issaugoti visa ataskaita i faila." << endl;
+    cout << "7. Iseiti." << endl;
+    cout << "Pasirinkite punkta (1-7): ";
+}
+
 int main()
 {
     string kategorijos[MAKS_IRASU];
@@ -358,12 +490,63 @@ int main()
         return 1;
     }
 
-    isvestiVisaAtaskaita(cout, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
-
-    if (issaugotiAtaskaitaIFaila("ataskaita.txt", kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius))
+    int pasirinkimas = 0;
+    do
     {
-        cout << "Ataskaita sekmingai issaugota faile 'ataskaita.txt'." << endl;
-    }
+        isvestiMeniu();
+
+        if (!(cin >> pasirinkimas))
+        {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Netinkamas pasirinkimas. Iveskite skaiciu nuo 1 iki 7." << endl;
+            pasirinkimas = -1;
+            continue;
+        }
+
+        switch (pasirinkimas)
+        {
+            case 1:
+                cout << endl;
+                isvestiPrekiuLentele(cout, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
+                break;
+
+            case 2:
+            {
+                string kat = pasirinktiKategorijaMeniu();
+                perziuretiKategorija(kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius, kat);
+                break;
+            }
+
+            case 3:
+                perziuretiVisoUzsakymoSumas(kainos, kiekiai, irasuSkaicius);
+                break;
+
+            case 4:
+                perziuretiSumasPagalKategorijas(kategorijos, kainos, kiekiai, irasuSkaicius);
+                break;
+
+            case 5:
+                cout << endl;
+                isvestiVisaAtaskaita(cout, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
+                break;
+
+            case 6:
+                if (issaugotiAtaskaitaIFaila("ataskaita.txt", kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius))
+                {
+                    cout << "Ataskaita sekmingai issaugota faile 'ataskaita.txt'." << endl;
+                }
+                break;
+
+            case 7:
+                cout << "Darbas baigtas." << endl;
+                break;
+
+            default:
+                cout << "Tokio pasirinkimo nera. Iveskite skaiciu nuo 1 iki 7." << endl;
+                break;
+        }
+    } while (pasirinkimas != 7);
 
     return 0;
 }
