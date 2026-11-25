@@ -235,6 +235,115 @@ double skaiciuotiKategorijosMoketinaSuma(
     return suma;
 }
 
+void isvestiPrekiuLentele(
+    ostream &out,
+    const string kategorijos[],
+    const string pavadinimai[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius
+)
+{
+    out << fixed << setprecision(2);
+    out << "Nr. | Kategorija | Pavadinimas | Kaina (Eur) | Kiekis | Suma pries nuol. (Eur) | Nuolaida (Eur) | Moketina (Eur)" << endl;
+    out << "----------------------------------------------------------------------------------------------------------------" << endl;
+
+    for (int i = 0; i < irasuSkaicius; i++)
+    {
+        double sumaPries = skaiciuotiEilutesSumaPriesNuolaida(kainos[i], kiekiai[i]);
+        double nuolaida = skaiciuotiEilutesNuolaida(kainos[i], kiekiai[i]);
+        double moketina = sumaPries - nuolaida;
+
+        out << (i + 1) << ". | "
+            << kategorijos[i] << " | "
+            << pavadinimai[i] << " | "
+            << kainos[i] << " | "
+            << kiekiai[i] << " | "
+            << sumaPries << " | "
+            << nuolaida << " | "
+            << moketina << endl;
+    }
+}
+
+void isvestiVisaAtaskaita(
+    ostream &out,
+    const string kategorijos[],
+    const string pavadinimai[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius
+)
+{
+    double visoPries = 0.0;
+    double visoNuol = 0.0;
+    double visoMok = 0.0;
+
+    skaiciuotiVisoUzsakymoSumas(kainos, kiekiai, irasuSkaicius, visoPries, visoNuol, visoMok);
+
+    double sumaDviraciai = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Dviraciai"
+    );
+    double sumaDalys = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Dalys"
+    );
+    double sumaAksesuarai = skaiciuotiKategorijosMoketinaSuma(
+        kategorijos, kainos, kiekiai, irasuSkaicius, "Aksesuarai"
+    );
+
+    out << fixed << setprecision(2);
+    out << "================================================================================================================" << endl;
+    out << "                          DVIRACIU PARDUOTUVES UZSAKYMO ATASKAITA" << endl;
+    out << "================================================================================================================" << endl;
+    isvestiPrekiuLentele(out, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
+    out << "----------------------------------------------------------------------------------------------------------------" << endl;
+    out << "Viso uzsakymo suma pries nuolaidas: " << visoPries << " Eur" << endl;
+    out << "Bendra nuolaidu suma:               " << visoNuol << " Eur" << endl;
+    out << "Galutine moketina suma:            " << visoMok << " Eur" << endl;
+    out << "----------------------------------------------------------------------------------------------------------------" << endl;
+    out << "Kategoriju suvestine (moketina suma po nuolaidu):" << endl;
+    out << "  Dviraciai:  " << sumaDviraciai << " Eur" << endl;
+    out << "  Dalys:      " << sumaDalys << " Eur" << endl;
+    out << "  Aksesuarai: " << sumaAksesuarai << " Eur" << endl;
+    out << "================================================================================================================" << endl;
+}
+
+bool issaugotiAtaskaitaIFaila(
+    const string &failoVardas,
+    const string kategorijos[],
+    const string pavadinimai[],
+    const double kainos[],
+    const int kiekiai[],
+    int irasuSkaicius
+)
+{
+    ofstream fout;
+    fout.open(failoVardas.c_str(), ios::out | ios::trunc);
+
+    if (fout.fail())
+    {
+        cout << "Klaida: nepavyko atverti failo '" << failoVardas << "' irasymui." << endl;
+        return false;
+    }
+
+    isvestiVisaAtaskaita(fout, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
+
+    if (fout.fail())
+    {
+        cout << "Klaida: irasant ataskaita i faila '" << failoVardas << "'." << endl;
+        fout.close();
+        return false;
+    }
+
+    fout.close();
+    if (fout.fail())
+    {
+        cout << "Klaida: uzdarant faila '" << failoVardas << "'." << endl;
+        return false;
+    }
+
+    return true;
+}
+
 int main()
 {
     string kategorijos[MAKS_IRASU];
@@ -249,19 +358,12 @@ int main()
         return 1;
     }
 
-    double visoPries = 0.0;
-    double visoNuol = 0.0;
-    double visoMok = 0.0;
-    skaiciuotiVisoUzsakymoSumas(kainos, kiekiai, irasuSkaicius, visoPries, visoNuol, visoMok);
+    isvestiVisaAtaskaita(cout, kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius);
 
-    cout << fixed << setprecision(2);
-    cout << "Nuskaityta irasu: " << irasuSkaicius << endl;
-    cout << "Suma pries nuolaidas: " << visoPries << " Eur" << endl;
-    cout << "Bendra nuolaidu suma: " << visoNuol << " Eur" << endl;
-    cout << "Galutine moketina suma: " << visoMok << " Eur" << endl;
-    cout << "Dviraciai: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Dviraciai") << " Eur" << endl;
-    cout << "Dalys: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Dalys") << " Eur" << endl;
-    cout << "Aksesuarai: " << skaiciuotiKategorijosMoketinaSuma(kategorijos, kainos, kiekiai, irasuSkaicius, "Aksesuarai") << " Eur" << endl;
+    if (issaugotiAtaskaitaIFaila("ataskaita.txt", kategorijos, pavadinimai, kainos, kiekiai, irasuSkaicius))
+    {
+        cout << "Ataskaita sekmingai issaugota faile 'ataskaita.txt'." << endl;
+    }
 
     return 0;
 }
